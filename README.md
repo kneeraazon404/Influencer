@@ -1,117 +1,121 @@
-# Influencer 🚀  
-### Scraping and Automation for Influencer Management with User Interface  
+# Influencer 📸
 
-This project provides a streamlined solution for managing influencers by integrating web scraping, automation, and a user-friendly interface. From identifying influencers to automating tasks like outreach, this tool is an all-in-one solution for businesses and individuals looking to optimize their influencer marketing efforts.
+### Advanced Instagram Scraping & Automation Tool
 
----
-
-## 🌟 Features  
-
-- **Web Scraping**:  
-  Efficiently scrape influencer data (e.g., followers, engagement rates, niches) from various platforms.  
-
-- **Automation**:  
-  Automate repetitive tasks such as sending messages, collecting data, and monitoring influencer activity.  
-
-- **User Interface**:  
-  A clean and intuitive UI to interact with the tool, making it accessible even for non-technical users.  
-
-- **Data Export**:  
-  Export scraped data to various formats (CSV, Excel) for easy analysis and reporting.  
-
-- **Customizable Filters**:  
-  Filter influencers based on specific criteria such as audience size, niche, and more.  
+**Influencer** is a comprehensive Python-based tool designed for automating interactions and extracting data from Instagram. Whether you are a marketer, researcher, or developer, this project provides a modular codebase to crawl profiles, fetch posts, analyze hashtags, and automate engagement like liking posts.
 
 ---
 
-## 🛠️ Technology Stack  
+## 🚀 Key Features
 
-- **Programming Language**: Python  
-- **Libraries**:  
-  - `BeautifulSoup` and `Selenium` for web scraping  
-  - `Tkinter` or `PyQt` for building the user interface  
-  - `Pandas` for data manipulation and export  
-
----
-
-## 🚀 Getting Started  
-
-Follow these steps to set up and run the project:  
-
-### Prerequisites  
-
-1. Install Python (version 3.8 or above).  
-2. Install required libraries using `pip`:  
-
-   ```bash  
-   pip install -r requirements.txt  
-   ```  
-
-3. Ensure you have the necessary browser drivers (e.g., ChromeDriver for Selenium).  
-
-### Installation  
-
-1. Clone the repository:  
-
-   ```bash  
-   git clone https://github.com/kneeraazon404/Influencer.git  
-   cd Influencer  
-   ```  
-
-2. Run the application:  
-
-   ```bash  
-   python main.py  
-   ```  
+- **Profile Crawler**: Extract detailed user profile information.
+- **Post Crawler**: Scrape posts from specific users or hashtags.
+- **Engagement Automation**: Auto-like posts based on hashtags to increase visibility.
+- **Comment Fetcher**: Interactive tool to download comments from specific posts.
+- **Headless Mode**: Run crawling tasks in the background without a visible browser window.
 
 ---
 
-## 📸 Screenshots  
+## 🛠️ Project Structure
 
-### User Interface  
-![UI Screenshot](https://via.placeholder.com/800x400?text=User+Interface+Screenshot)  
+The project is organized into modular scripts for different tasks:
 
-### Data Export  
-![Export Screenshot](https://via.placeholder.com/800x400?text=Data+Export+Screenshot)  
-
----
-
-## 💡 Use Cases  
-
-- **Marketing Agencies**: Discover and manage influencers for campaigns.  
-- **Small Businesses**: Automate influencer outreach to save time.  
-- **Researchers**: Collect data on influencers for academic or market analysis.  
+- **`crawler.py`**: The main CLI tool for crawling posts, profiles, and hashtags.
+- **`liker.py`**: A dedicated script for automating "likes" on posts under specific hashtags.
+- **`fetchComments`**: A script to interactively fetch comments from a specific photo.
+- **`inscrawler/`**: The core library containing the Selenium browser logic and scraping mechanisms.
+- **`insta_scraper/`** & **`instagram/`**: Alternative scraping implementations and sandbox scripts.
 
 ---
 
-## 🤝 Contributions  
+## 📋 Prerequisites
 
-Contributions are welcome! Follow these steps:  
-
-1. **Fork the repository**.  
-2. **Create a new branch** for your feature or bug fix:  
-
-   ```bash  
-   git checkout -b feature-name  
-   ```  
-
-3. **Commit your changes**:  
-
-   ```bash  
-   git commit -m "Add feature-name"  
-   ```  
-
-4. **Push to your branch**:  
-
-   ```bash  
-   git push origin feature-name  
-   ```  
-
-5. **Create a pull request**.  
+- **Python 3.6+**
+- **Google Chrome** browser installed.
+- **ChromeDriver**: The project expects a `chromedriver` binary in `inscrawler/bin/chromedriver`.
 
 ---
 
-## 📜 License  
+## ⚙️ Installation
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.  
+1. **Clone the repository**:
 
+   ```bash
+   git clone https://github.com/kneeraazon404/Influencer.git
+   cd Influencer
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Setup ChromeDriver**:
+   - Download the version of [ChromeDriver](https://chromedriver.chromium.org/downloads) that matches your installed Chrome version.
+   - Place the `chromedriver` executable in the `inscrawler/bin/` directory.
+   - _Note: You may need to create the `bin` directory if it doesn't exist._
+
+   ```bash
+   mkdir -p inscrawler/bin
+   mv /path/to/downloaded/chromedriver inscrawler/bin/
+   chmod +x inscrawler/bin/chromedriver
+   ```
+
+---
+
+## 📖 Usage
+
+### 1. Crawling Data (`crawler.py`)
+
+This script supports multiple modes. Run it from the command line:
+
+**Fetch Posts by User:**
+
+```bash
+python crawler.py posts -u <username> -n <number_of_posts> -o ./output
+```
+
+_Example:_ `python crawler.py posts -u cleaning_services_nepal -n 50 -o ./output`
+
+**Fetch Posts by Hashtag:**
+
+```bash
+python crawler.py hashtag -t <tag> -o ./output
+```
+
+_Example:_ `python crawler.py hashtag -t travel -o ./output`
+
+**Fetch User Profile:**
+
+```bash
+python crawler.py profile -u <username> -o ./output
+```
+
+### 2. Auto-Liker (`liker.py`)
+
+Automate liking posts to grow engagement.
+
+```bash
+python liker.py <hashtag> --number <count>
+```
+
+_Example_: Like 100 posts with the hashtag #coding:
+
+```bash
+python liker.py coding -n 100
+```
+
+### 3. Fetch Comments (`fetchComments`)
+
+Run this interactive script to download comments from a specific post. You will need to provide your login credentials interactively to access the post details.
+
+```bash
+python fetchComments
+```
+
+---
+
+## ⚠️ Disclaimer
+
+This tool is for **educational purposes only**. Automated scraping and interaction with Instagram may violate their [Terms of Use](https://help.instagram.com/581066165581870). Use responsibly and at your own risk. The authors are not responsible for any account bans or restrictions.
