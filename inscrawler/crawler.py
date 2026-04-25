@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import glob
 import json
 import os
@@ -7,27 +5,27 @@ import re
 import sys
 import time
 import traceback
-from builtins import open
 from time import sleep
 
+from selenium.webdriver.common.by import By
 from tqdm import tqdm
 
 from inscrawler import secret
 from inscrawler.browser import Browser
 from inscrawler.exceptions import RetryException
-from inscrawler.fetch import fetch_caption
-from inscrawler.fetch import fetch_comments
-from inscrawler.fetch import fetch_datetime
-from inscrawler.fetch import fetch_imgs
-from inscrawler.fetch import fetch_likers
-from inscrawler.fetch import fetch_likes_plays
-from inscrawler.fetch import fetch_details
-from inscrawler.utils import instagram_int
-from inscrawler.utils import randmized_sleep
-from inscrawler.utils import retry
+from inscrawler.fetch import (
+    fetch_caption,
+    fetch_comments,
+    fetch_datetime,
+    fetch_details,
+    fetch_imgs,
+    fetch_likers,
+    fetch_likes_plays,
+)
+from inscrawler.utils import instagram_int, randmized_sleep, retry
 
 
-class Logging(object):
+class Logging:
     PREFIX = "instagram-crawler"
 
     def __init__(self):
@@ -49,7 +47,6 @@ class Logging(object):
     def log(self, msg):
         if self.log_disable:
             return
-
         self.logger.write(msg + "\n")
         self.logger.flush()
 
@@ -64,7 +61,7 @@ class InsCrawler(Logging):
     RETRY_LIMIT = 10
 
     def __init__(self, has_screen=False):
-        super(InsCrawler, self).__init__()
+        super().__init__()
         self.browser = Browser(has_screen)
         self.page_height = 0
         self.login()
@@ -76,15 +73,43 @@ class InsCrawler(Logging):
 
     def login(self):
         browser = self.browser
-        url = "%s/accounts/login/" % (InsCrawler.URL)
+        url = "%s/accounts/login/" % InsCrawler.URL
         browser.get(url)
-        u_input = browser.find_one('input[name="username"]')
-        u_input.send_keys(secret.username)
-        p_input = browser.find_one('input[name="password"]')
-        p_input.send_keys(secret.password)
+        sleep(2)
+
+        try:
+            buttons = browser.driver.find_elements(
+                By.XPATH,
+                "//button[contains(text(), 'Allow') or contains(text(), 'Accept')]",
+            )
+            for btn in buttons:
+                if btn.is_displayed():
+                    btn.click()
+                    sleep(2)
+                    break
+        except Exception:
+            pass
+
+        try:
+            u_input = browser.find_one('input[name="username"]', waittime=10)
+            u_input.send_keys(secret.username)
+            p_input = browser.find_one('input[name="password"]', waittime=10)
+            p_input.send_keys(secret.password)
+        except Exception:
+            print("Error: Could not find login fields. This might be due to:")
+            print("1. Network slowness or timeouts.")
+            print("2. Instagram detecting automation (headless mode).")
+            print("3. Captcha or unusual login flow.")
+            print("4. Empty or invalid credentials in inscrawler/secret.py")
+            raise
 
         login_btn = browser.find_one(".L3NKy")
-        login_btn.click()
+        if login_btn:
+            login_btn.click()
+        else:
+            submit = browser.find_one('button[type="submit"]')
+            if submit:
+                submit.click()
 
         @retry()
         def check_login():
@@ -100,12 +125,12 @@ class InsCrawler(Logging):
         name = browser.find_one(".rhpdm")
         desc = browser.find_one(".-vDIg span")
         photo = browser.find_one("._6q-tv")
-        statistics = [ele.text for ele in browser.find(".g47SY")]
-        post_num, follower_num, following_num = statistics
+        statistics = [ele.text for ele in (browser.find(".g47SY") or [])]
+        post_num, follower_num, following_num = statistics if len(statistics) == 3 else ("", "", "")
         return {
-            "name": name.text,
+            "name": name.text if name else "",
             "desc": desc.text if desc else None,
-            "photo_url": photo.get_attribute("src"),
+            "photo_url": photo.get_attribute("src") if photo else None,
             "post_num": post_num,
             "follower_num": follower_num,
             "following_num": following_num,
@@ -117,11 +142,11 @@ class InsCrawler(Logging):
         browser.get(url)
         source = browser.driver.page_source
         p = re.compile(r"window._sharedData = (?P<json>.*?);</script>", re.DOTALL)
-        json_data = re.search(p, source).group("json")
-        data = json.loads(json_data)
-
+        match = re.search(p, source)
+        if not match:
+            raise ValueError("Could not find _sharedData on profile page")
+        data = json.loads(match.group("json"))
         user_data = data["entry_data"]["ProfilePage"][0]["graphql"]["user"]
-
         return {
             "name": user_data["full_name"],
             "desc": user_data["biography"],
@@ -150,15 +175,17 @@ class InsCrawler(Logging):
         return self._get_posts(num)
 
     def auto_like(self, tag="", maximum=1000):
-        self.login()
         browser = self.browser
         if tag:
             url = "%s/explore/tags/%s/" % (InsCrawler.URL, tag)
         else:
-            url = "%s/explore/" % (InsCrawler.URL)
+            url = "%s/explore/" % InsCrawler.URL
         self.browser.get(url)
 
         ele_post = browser.find_one(".v1Nh3 a")
+        if not ele_post:
+            print("Could not find posts to like.")
+            return
         ele_post.click()
 
         for _ in range(maximum):
@@ -178,11 +205,8 @@ class InsCrawler(Logging):
         @retry()
         def check_next_post(cur_key):
             ele_a_datetime = browser.find_one(".eo2As .c-Yi7")
-
-            # It takes time to load the post for some users with slow network
             if ele_a_datetime is None:
                 raise RetryException()
-
             next_key = ele_a_datetime.get_attribute("href")
             if cur_key == next_key:
                 raise RetryException()
@@ -201,17 +225,13 @@ class InsCrawler(Logging):
         all_posts = self._get_posts(num)
         i = 1
 
-        # Fetching all posts
         for _ in range(num):
             dict_post = {}
-
-            # Fetching post detail
             try:
-                if(i < num):
-                    check_next_post(all_posts[i]['key'])
-                    i = i + 1
+                if i < num:
+                    check_next_post(all_posts[i]["key"])
+                    i += 1
 
-                # Fetching datetime and url as key
                 ele_a_datetime = browser.find_one(".eo2As .c-Yi7")
                 cur_key = ele_a_datetime.get_attribute("href")
                 dict_post["key"] = cur_key
@@ -226,9 +246,8 @@ class InsCrawler(Logging):
                 sys.stderr.write(
                     "\x1b[1;31m"
                     + "Failed to fetch the post: "
-                    + cur_key or 'URL not fetched'
-                    + "\x1b[0m"
-                    + "\n"
+                    + (cur_key or "URL not fetched")
+                    + "\x1b[0m\n"
                 )
                 break
 
@@ -236,28 +255,22 @@ class InsCrawler(Logging):
                 sys.stderr.write(
                     "\x1b[1;31m"
                     + "Failed to fetch the post: "
-                    + cur_key if isinstance(cur_key,str) else 'URL not fetched'
-                    + "\x1b[0m"
-                    + "\n"
+                    + (cur_key if isinstance(cur_key, str) else "URL not fetched")
+                    + "\x1b[0m\n"
                 )
                 traceback.print_exc()
 
             self.log(json.dumps(dict_post, ensure_ascii=False))
             dict_posts[browser.current_url] = dict_post
-
             pbar.update(1)
 
         pbar.close()
         posts = list(dict_posts.values())
         if posts:
-            posts.sort(key=lambda post: post["datetime"], reverse=True)
+            posts.sort(key=lambda post: post.get("datetime", ""), reverse=True)
         return posts
 
     def _get_posts(self, num):
-        """
-            To get posts, we have to click on the load more
-            button and make the browser call post api.
-        """
         TIMEOUT = 600
         browser = self.browser
         key_set = set()
@@ -268,14 +281,15 @@ class InsCrawler(Logging):
         pbar = tqdm(total=num)
 
         def start_fetching(pre_post_num, wait_time):
-            ele_posts = browser.find(".v1Nh3 a")
+            ele_posts = browser.find(".v1Nh3 a") or []
             for ele in ele_posts:
                 key = ele.get_attribute("href")
                 if key not in key_set:
-                    dict_post = { "key": key }
+                    dict_post = {"key": key}
                     ele_img = browser.find_one(".KL4Bh img", ele)
-                    dict_post["caption"] = ele_img.get_attribute("alt")
-                    dict_post["img_url"] = ele_img.get_attribute("src")
+                    if ele_img:
+                        dict_post["caption"] = ele_img.get_attribute("alt")
+                        dict_post["img_url"] = ele_img.get_attribute("src")
 
                     fetch_details(browser, dict_post)
 
@@ -286,10 +300,9 @@ class InsCrawler(Logging):
                         break
 
             if pre_post_num == len(posts):
-                pbar.set_description("Wait for %s sec" % (wait_time))
+                pbar.set_description("Wait for %s sec" % wait_time)
                 sleep(wait_time)
                 pbar.set_description("fetching")
-
                 wait_time *= 2
                 browser.scroll_up(300)
             else:
@@ -297,7 +310,6 @@ class InsCrawler(Logging):
 
             pre_post_num = len(posts)
             browser.scroll_down()
-
             return pre_post_num, wait_time
 
         pbar.set_description("fetching")
@@ -311,5 +323,5 @@ class InsCrawler(Logging):
                 break
 
         pbar.close()
-        print("Done. Fetched %s posts." % (min(len(posts), num)))
+        print("Done. Fetched %s posts." % min(len(posts), num))
         return posts[:num]

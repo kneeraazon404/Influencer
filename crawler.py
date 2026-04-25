@@ -1,14 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import argparse
 import json
 import sys
-from io import open
 
 from inscrawler import InsCrawler
-from inscrawler.settings import override_settings
-from inscrawler.settings import prepare_override_settings
+from inscrawler.settings import override_settings, prepare_override_settings
 
 
 def usage():
@@ -34,8 +29,8 @@ def get_profile(username):
 
 
 def get_profile_from_script(username):
-    ins_cralwer = InsCrawler()
-    return ins_cralwer.get_user_profile_from_script_shared_data(username)
+    ins_crawler = InsCrawler()
+    return ins_crawler.get_user_profile_from_script_shared_data(username)
 
 
 def get_posts_by_hashtag(tag, number, debug):
@@ -43,17 +38,17 @@ def get_posts_by_hashtag(tag, number, debug):
     return ins_crawler.get_latest_posts_by_tag(tag, number)
 
 
-def arg_required(args, fields=[]):
+def arg_required(args, fields):
     for field in fields:
         if not getattr(args, field):
             parser.print_help()
-            sys.exit()
+            sys.exit(1)
 
 
 def output(data, filepath):
     out = json.dumps(data, ensure_ascii=False)
     if filepath:
-        with open(filepath, "w", encoding="utf8") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(out)
     else:
         print(out)
@@ -62,22 +57,22 @@ def output(data, filepath):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Instagram Crawler", usage=usage())
     parser.add_argument(
-        "mode", help="options: [posts, posts_full, profile, profile_script, hashtag]"
+        "mode",
+        help="options: [posts, posts_full, profile, profile_script, hashtag]",
     )
     parser.add_argument("-n", "--number", type=int, help="number of returned posts")
-    parser.add_argument("-u", "--username", help="instagram's username")
-    parser.add_argument("-t", "--tag", help="instagram's tag name")
-    parser.add_argument("-o", "--output", help="output file name(json format)")
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("-u", "--username", help="instagram username")
+    parser.add_argument("-t", "--tag", help="instagram hashtag name")
+    parser.add_argument("-o", "--output", help="output file path (JSON format)")
+    parser.add_argument("--debug", action="store_true", help="show browser window")
 
     prepare_override_settings(parser)
 
     args = parser.parse_args()
-
     override_settings(args)
 
     if args.mode in ["posts", "posts_full"]:
-        arg_required("username")
+        arg_required(args, ["username"])
         output(
             get_posts_by_user(
                 args.username, args.number, args.mode == "posts_full", args.debug
@@ -85,15 +80,17 @@ if __name__ == "__main__":
             args.output,
         )
     elif args.mode == "profile":
-        arg_required("username")
+        arg_required(args, ["username"])
         output(get_profile(args.username), args.output)
     elif args.mode == "profile_script":
-        arg_required("username")
+        arg_required(args, ["username"])
         output(get_profile_from_script(args.username), args.output)
     elif args.mode == "hashtag":
-        arg_required("tag")
+        arg_required(args, ["tag"])
         output(
-            get_posts_by_hashtag(args.tag, args.number or 100, args.debug), args.output
+            get_posts_by_hashtag(args.tag, args.number or 100, args.debug),
+            args.output,
         )
     else:
-        usage()
+        print(usage())
+        sys.exit(1)

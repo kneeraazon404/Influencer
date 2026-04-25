@@ -1,6 +1,6 @@
-future==0.16.0
-selenium==3.9.0
-tqdm==4.23.4
-pre-commit==1.16.1
-black==19.3b0
-fake-useragent==0.1.11
+selenium>=4.0.0
+tqdm>=4.0.0
+fake-useragent>=1.0.0
+trio-typing>=0.10.0
+types-certifi>=2021.10.8
+types-urllib3>=1.26.0

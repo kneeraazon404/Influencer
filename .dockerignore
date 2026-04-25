@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.github/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.tox/
+.coverage
+.coverage.*
+.cache
+.mypy_cache
+.pytest_cache
+.hypothesis
+*.log
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+
+# Credentials
+inscrawler/secret.py
+
+# Tests
+tests/
