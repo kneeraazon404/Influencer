@@ -126,7 +126,9 @@ class InsCrawler(Logging):
         desc = browser.find_one(".-vDIg span")
         photo = browser.find_one("._6q-tv")
         statistics = [ele.text for ele in (browser.find(".g47SY") or [])]
-        post_num, follower_num, following_num = statistics if len(statistics) == 3 else ("", "", "")
+        post_num, follower_num, following_num = (
+            statistics if len(statistics) == 3 else ("", "", "")
+        )
         return {
             "name": name.text if name else "",
             "desc": desc.text if desc else None,
@@ -146,15 +148,22 @@ class InsCrawler(Logging):
         if not match:
             raise ValueError("Could not find _sharedData on profile page")
         data = json.loads(match.group("json"))
-        user_data = data["entry_data"]["ProfilePage"][0]["graphql"]["user"]
+
+        try:
+            user_data = data["entry_data"]["ProfilePage"][0]["graphql"]["user"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise ValueError(f"Unexpected data structure in _sharedData: {e}")
+
         return {
-            "name": user_data["full_name"],
-            "desc": user_data["biography"],
-            "photo_url": user_data["profile_pic_url_hd"],
-            "post_num": user_data["edge_owner_to_timeline_media"]["count"],
-            "follower_num": user_data["edge_followed_by"]["count"],
-            "following_num": user_data["edge_follow"]["count"],
-            "website": user_data["external_url"],
+            "name": user_data.get("full_name", ""),
+            "desc": user_data.get("biography", ""),
+            "photo_url": user_data.get("profile_pic_url_hd"),
+            "post_num": user_data.get("edge_owner_to_timeline_media", {}).get(
+                "count", 0
+            ),
+            "follower_num": user_data.get("edge_followed_by", {}).get("count", 0),
+            "following_num": user_data.get("edge_follow", {}).get("count", 0),
+            "website": user_data.get("external_url"),
         }
 
     def get_user_posts(self, username, number=None, detail=False):
@@ -228,7 +237,7 @@ class InsCrawler(Logging):
         for _ in range(num):
             dict_post = {}
             try:
-                if i < num:
+                if i < num and i < len(all_posts):
                     check_next_post(all_posts[i]["key"])
                     i += 1
 
